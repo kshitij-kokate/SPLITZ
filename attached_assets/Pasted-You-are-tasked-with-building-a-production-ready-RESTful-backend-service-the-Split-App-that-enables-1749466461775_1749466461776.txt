@@ -1,0 +1,163 @@
+You are tasked with building a production-ready RESTful backend service—the “Split App”—that enables groups to track shared expenses and automatically compute fair settlements, akin to Splitwise or Google Pay’s bill-splitting feature. Follow every requirement below precisely. 
+
+1. Core Functionality
+Expense Tracking
+
+POST /expenses
+
+Request body:
+
+json
+Copy
+Edit
+{
+  "amount": <positive number>,
+  "description": "<non-empty string>",
+  "paid_by": "<person name>"
+}
+Auto-create the person if not already present.
+
+Support splitting with equal share (default); design extensibly for exact or percentage splits.
+
+GET /expenses
+
+Returns list of all expenses with id, amount, description, paid_by, split_method, and timestamp.
+
+PUT /expenses/:id
+
+Update any of amount, description, paid_by, or split details.
+
+DELETE /expenses/:id
+
+Remove the expense; recalculate balances accordingly.
+
+Settlement Calculations
+
+GET /people
+
+Lists every person (derived from expenses), with unique IDs and names.
+
+GET /balances
+
+For each person, return { name, total_paid, fair_share, balance } where balance = total_paid – fair_share.
+
+GET /settlements
+
+Compute a minimal set of transactions to settle all balances.
+
+Response format example:
+
+json
+Copy
+Edit
+[
+  { "from": "Alice", "to": "Bob",   "amount": 25.00 },
+  { "from": "Charlie","to": "Alice","amount": 10.00 }
+]
+Data Validation & Error Handling
+
+Input Validation:
+
+amount must be > 0.
+
+description and paid_by are required, non-empty strings.
+
+Edge Cases:
+
+Return 400 Bad Request with clear JSON errors for invalid input.
+
+404 Not Found for updates/deletes on non-existent resources.
+
+GET /balances or /settlements with zero expenses should return empty lists, not errors.
+
+Uniform response envelope:
+
+json
+Copy
+Edit
+{
+  "success": <true|false>,
+  "data": <object|array|null>,
+  "message": "<informative string>"
+}
+2. Optional (Extra Credit)
+Implement any or all of these for bonus points—core functionality must be flawless first:
+
+Recurring Transactions: auto-create periodic expenses (rent, subscriptions) at specified intervals.
+
+Categories: allow tagging each expense with one of [Food, Travel, Utilities, Entertainment, Other] and support category‐wise totals.
+
+Analytics Endpoints:
+
+GET /monthly-summary – total spent per month.
+
+GET /category-breakdown – spend per category per person.
+
+Web Interface: simple HTML/JS UI to add expenses and view current balances/settlements.
+
+3. Deliverables & Deployment
+Code Repository
+
+Public GitHub repo with clear README: setup steps, environment variables, database migrations/schema.
+
+Clean, well-documented code (comments, meaningful function names).
+
+Deployment
+
+Deploy to a free-tier cloud service (e.g. Railway.app, Render.com).
+
+Use a cloud database (PostgreSQL on Railway or MongoDB Atlas).
+
+All endpoints must be live and publicly accessible.
+
+Postman Collection
+
+Create a public GitHub Gist hosting a Postman collection JSON.
+
+Include:
+
+All core endpoints with realistic sample data (“Shantanu”, “Sanket”, “Om”).
+
+Pre-populated expenses demonstrating diverse scenarios (adding, updating, deleting).
+
+Examples for invalid requests (negative amount, missing fields).
+
+Ensure collection uses your deployed base URL.
+
+Documentation
+
+README:
+
+API endpoint list with request/response examples.
+
+Explanation of your settlement calculation algorithm.
+
+Known limitations or assumptions.
+
+(Optional) Short demo video or GIF illustrating key flows.
+
+4. Common Pitfalls to Avoid
+Incorrect Logic: equal-split vs exact/percentage miscalculations; floating-point rounding errors.
+
+Validation Gaps: allowing negative amounts, silent failures on missing fields.
+
+Inconsistent API: mismatched response formats or status codes.
+
+Deployment Errors: hard-coded localhost URLs; unpopulated environments; database only local.
+
+5. Recommended Tech Stack
+Language/Framework: Node.js (Express), Python (FastAPI/Flask), or Java (Spring Boot)
+
+Database: PostgreSQL (Railway) or MongoDB Atlas
+
+CI/CD: GitHub Actions (for tests & deploy)
+
+Testing: Postman for API; Jest/PyTest for unit logic.
+
+Focus on:
+
+Core features (expense tracking, settlements) 100% correct
+
+Robust validation, clear errors, and consistent API design
+
+Automated deployment & ready-to-run Postman collection
