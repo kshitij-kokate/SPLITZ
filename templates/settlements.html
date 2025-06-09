@@ -83,7 +83,7 @@
                                             {% if balance_info.balance > 0 %}
                                                 <span class="text-success">+${{ "%.2f"|format(balance_info.balance) }}</span>
                                             {% elif balance_info.balance < 0 %}
-                                                <span class="text-danger">-${{ "%.2f"|format(abs(balance_info.balance)) }}</span>
+                                                <span class="text-danger">-${{ "%.2f"|format(balance_info.balance|abs) }}</span>
                                             {% else %}
                                                 <span class="text-muted">$0.00</span>
                                             {% endif %}

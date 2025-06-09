@@ -48,9 +48,42 @@
                         </div>
                     </div>
                     
-                    {% if people %}
                     <div class="mb-3">
-                        <label class="form-label">Split Among (default: all people)</label>
+                        <label class="form-label">Split Method</label>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="split_method" value="equal" id="split_equal" checked onchange="updateSplitUI()">
+                                    <label class="form-check-label" for="split_equal">
+                                        <strong>Equal Split</strong><br>
+                                        <small class="text-muted">Divide equally among selected people</small>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="split_method" value="exact" id="split_exact" onchange="updateSplitUI()">
+                                    <label class="form-check-label" for="split_exact">
+                                        <strong>Exact Amounts</strong><br>
+                                        <small class="text-muted">Specify exact amount for each person</small>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="split_method" value="percentage" id="split_percentage" onchange="updateSplitUI()">
+                                    <label class="form-check-label" for="split_percentage">
+                                        <strong>Percentage Split</strong><br>
+                                        <small class="text-muted">Specify percentage for each person</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Equal Split Participants -->
+                    <div id="equal_split_section" class="mb-3">
+                        <label class="form-label">Split Among</label>
                         <div class="row">
                             {% for person in people %}
                                 <div class="col-md-3">
@@ -63,9 +96,35 @@
                                 </div>
                             {% endfor %}
                         </div>
-                        <small class="text-muted">Select who should share this expense (equal split)</small>
+                        <small class="text-muted">Select who should share this expense equally</small>
                     </div>
-                    {% endif %}
+
+                    <!-- Custom Splits Section -->
+                    <div id="custom_splits_section" class="mb-3" style="display: none;">
+                        <label class="form-label">Custom Splits</label>
+                        <div id="splits_container">
+                            <div class="split-row row mb-2">
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control" placeholder="Person name" name="split_person[]">
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="number" step="0.01" class="form-control split-amount" placeholder="Amount" name="split_amount[]" onchange="calculateSplitTotals()">
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="number" step="0.01" class="form-control split-percentage" placeholder="Percentage" name="split_percentage[]" onchange="calculateSplitTotals()">
+                                </div>
+                                <div class="col-md-1">
+                                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeSplitRow(this)">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="addSplitRow()">
+                            <i class="fas fa-plus"></i> Add Person
+                        </button>
+                        <div id="split_totals" class="mt-2"></div>
+                    </div>
                     
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-plus me-2"></i>Add Expense
@@ -185,6 +244,9 @@
 
 {% block scripts %}
 <script>
+// Global variables
+let peopleList = [{% for person in people %}'{{ person.name }}'{{ ',' if not loop.last }}{% endfor %}];
+
 // Auto-check the payer in participants when paid_by changes
 document.getElementById('paid_by').addEventListener('input', function() {
     const paidBy = this.value.trim();
@@ -205,6 +267,186 @@ document.getElementById('paid_by').addEventListener('input', function() {
     if (!anyChecked) {
         checkboxes.forEach(cb => cb.checked = true);
     }
+});
+
+// Update split UI based on selected method
+function updateSplitUI() {
+    const splitMethod = document.querySelector('input[name="split_method"]:checked').value;
+    const equalSection = document.getElementById('equal_split_section');
+    const customSection = document.getElementById('custom_splits_section');
+    const splitAmounts = document.querySelectorAll('.split-amount');
+    const splitPercentages = document.querySelectorAll('.split-percentage');
+    
+    if (splitMethod === 'equal') {
+        equalSection.style.display = 'block';
+        customSection.style.display = 'none';
+    } else {
+        equalSection.style.display = 'none';
+        customSection.style.display = 'block';
+        
+        // Show/hide relevant fields based on split method
+        if (splitMethod === 'exact') {
+            splitAmounts.forEach(input => {
+                input.style.display = 'block';
+                input.required = true;
+            });
+            splitPercentages.forEach(input => {
+                input.style.display = 'none';
+                input.required = false;
+            });
+        } else if (splitMethod === 'percentage') {
+            splitAmounts.forEach(input => {
+                input.style.display = 'none';
+                input.required = false;
+            });
+            splitPercentages.forEach(input => {
+                input.style.display = 'block';
+                input.required = true;
+            });
+        }
+        
+        calculateSplitTotals();
+    }
+}
+
+// Add a new split row
+function addSplitRow() {
+    const container = document.getElementById('splits_container');
+    const newRow = document.createElement('div');
+    newRow.className = 'split-row row mb-2';
+    newRow.innerHTML = `
+        <div class="col-md-4">
+            <input type="text" class="form-control" placeholder="Person name" name="split_person[]" list="peopleDatalist">
+        </div>
+        <div class="col-md-4">
+            <input type="number" step="0.01" class="form-control split-amount" placeholder="Amount" name="split_amount[]" onchange="calculateSplitTotals()">
+        </div>
+        <div class="col-md-3">
+            <input type="number" step="0.01" class="form-control split-percentage" placeholder="Percentage" name="split_percentage[]" onchange="calculateSplitTotals()">
+        </div>
+        <div class="col-md-1">
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeSplitRow(this)">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(newRow);
+    updateSplitUI();
+}
+
+// Remove a split row
+function removeSplitRow(button) {
+    const row = button.closest('.split-row');
+    row.remove();
+    calculateSplitTotals();
+}
+
+// Calculate and display split totals
+function calculateSplitTotals() {
+    const splitMethod = document.querySelector('input[name="split_method"]:checked').value;
+    const expenseAmount = parseFloat(document.getElementById('amount').value) || 0;
+    const totalsDiv = document.getElementById('split_totals');
+    
+    if (splitMethod === 'exact') {
+        const amounts = Array.from(document.querySelectorAll('.split-amount')).map(input => parseFloat(input.value) || 0);
+        const total = amounts.reduce((sum, amount) => sum + amount, 0);
+        const difference = expenseAmount - total;
+        
+        totalsDiv.innerHTML = `
+            <div class="alert ${Math.abs(difference) < 0.01 ? 'alert-success' : 'alert-warning'} py-2">
+                <strong>Total Split:</strong> $${total.toFixed(2)} | 
+                <strong>Expense Amount:</strong> $${expenseAmount.toFixed(2)} | 
+                <strong>Difference:</strong> $${difference.toFixed(2)}
+                ${Math.abs(difference) < 0.01 ? '<i class="fas fa-check ms-2"></i>' : '<i class="fas fa-exclamation-triangle ms-2"></i>'}
+            </div>
+        `;
+    } else if (splitMethod === 'percentage') {
+        const percentages = Array.from(document.querySelectorAll('.split-percentage')).map(input => parseFloat(input.value) || 0);
+        const total = percentages.reduce((sum, percentage) => sum + percentage, 0);
+        const difference = 100 - total;
+        
+        totalsDiv.innerHTML = `
+            <div class="alert ${Math.abs(difference) < 0.01 ? 'alert-success' : 'alert-warning'} py-2">
+                <strong>Total Percentage:</strong> ${total.toFixed(2)}% | 
+                <strong>Required:</strong> 100% | 
+                <strong>Difference:</strong> ${difference.toFixed(2)}%
+                ${Math.abs(difference) < 0.01 ? '<i class="fas fa-check ms-2"></i>' : '<i class="fas fa-exclamation-triangle ms-2"></i>'}
+            </div>
+        `;
+    }
+}
+
+// Enhanced form submission
+document.getElementById('expenseForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const splitMethod = formData.get('split_method');
+    
+    const expenseData = {
+        amount: parseFloat(formData.get('amount')),
+        description: formData.get('description'),
+        paid_by: formData.get('paid_by'),
+        split_method: splitMethod
+    };
+    
+    if (splitMethod === 'equal') {
+        expenseData.participants = formData.getAll('participants');
+    } else if (splitMethod === 'exact') {
+        const people = formData.getAll('split_person[]');
+        const amounts = formData.getAll('split_amount[]');
+        expenseData.splits = people.map((person, index) => ({
+            person: person.trim(),
+            amount: parseFloat(amounts[index])
+        })).filter(split => split.person && split.amount > 0);
+    } else if (splitMethod === 'percentage') {
+        const people = formData.getAll('split_person[]');
+        const percentages = formData.getAll('split_percentage[]');
+        expenseData.splits = people.map((person, index) => ({
+            person: person.trim(),
+            percentage: parseFloat(percentages[index])
+        })).filter(split => split.person && split.percentage > 0);
+    }
+    
+    try {
+        const response = await fetch('/api/expenses', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(expenseData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Show success message and reload page
+            alert('Expense added successfully!');
+            window.location.reload();
+        } else {
+            alert('Error: ' + result.message);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+});
+
+// Initialize UI
+document.addEventListener('DOMContentLoaded', function() {
+    updateSplitUI();
+    
+    // Add datalist for people autocomplete
+    const datalist = document.createElement('datalist');
+    datalist.id = 'peopleDatalist';
+    peopleList.forEach(person => {
+        const option = document.createElement('option');
+        option.value = person;
+        datalist.appendChild(option);
+    });
+    document.body.appendChild(datalist);
+    
+    // Update totals when expense amount changes
+    document.getElementById('amount').addEventListener('input', calculateSplitTotals);
 });
 
 // API Testing function

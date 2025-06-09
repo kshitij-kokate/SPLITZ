@@ -126,7 +126,7 @@
                                 {% if balance_info.balance > 0 %}
                                     <span class="badge bg-success rounded-pill">+${{ "%.2f"|format(balance_info.balance) }}</span>
                                 {% elif balance_info.balance < 0 %}
-                                    <span class="badge bg-danger rounded-pill">-${{ "%.2f"|format(abs(balance_info.balance)) }}</span>
+                                    <span class="badge bg-danger rounded-pill">-${{ "%.2f"|format(balance_info.balance|abs) }}</span>
                                 {% else %}
                                     <span class="badge bg-secondary rounded-pill">$0.00</span>
                                 {% endif %}
