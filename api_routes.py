@@ -36,6 +36,80 @@ def validate_expense_data(data):
     if not data.get('paid_by') or not data['paid_by'].strip():
         errors.append("paid_by is required and cannot be empty")
     
+    # Validate split method if provided
+    split_method = data.get('split_method', 'equal')
+    if split_method not in ['equal', 'exact', 'percentage']:
+        errors.append("split_method must be one of: equal, exact, percentage")
+    
+    # Validate splits array for custom split methods
+    if split_method in ['exact', 'percentage'] and 'splits' in data:
+        splits = data.get('splits', [])
+        if not splits:
+            errors.append(f"splits array is required for {split_method} split method")
+        else:
+            errors.extend(validate_splits(splits, split_method, data.get('amount')))
+    
+    return errors
+
+def validate_splits(splits, split_method, total_amount):
+    """Validate splits array based on split method"""
+    errors = []
+    
+    if not isinstance(splits, list):
+        errors.append("splits must be an array")
+        return errors
+    
+    if len(splits) == 0:
+        errors.append("splits array cannot be empty")
+        return errors
+    
+    # Check for duplicate people
+    people_names = []
+    for split in splits:
+        if not isinstance(split, dict):
+            errors.append("Each split must be an object")
+            continue
+            
+        person = split.get('person', '').strip()
+        if not person:
+            errors.append("Each split must have a person name")
+            continue
+            
+        if person in people_names:
+            errors.append(f"Duplicate person '{person}' in splits")
+        else:
+            people_names.append(person)
+    
+    if split_method == 'exact':
+        # Validate exact amounts
+        total_splits = Decimal('0')
+        for split in splits:
+            try:
+                amount = Decimal(str(split.get('amount', 0)))
+                if amount <= 0:
+                    errors.append(f"Split amount for {split.get('person', 'unknown')} must be greater than 0")
+                total_splits += amount
+            except (InvalidOperation, ValueError):
+                errors.append(f"Invalid amount for {split.get('person', 'unknown')}")
+        
+        if total_amount and abs(total_splits - Decimal(str(total_amount))) > Decimal('0.01'):
+            errors.append(f"Split amounts ({total_splits}) must equal total expense amount ({total_amount})")
+    
+    elif split_method == 'percentage':
+        # Validate percentages
+        total_percentage = Decimal('0')
+        for split in splits:
+            try:
+                percentage = Decimal(str(split.get('percentage', 0)))
+                if percentage <= 0 or percentage > 100:
+                    errors.append(f"Percentage for {split.get('person', 'unknown')} must be between 0 and 100")
+                total_percentage += percentage
+            except (InvalidOperation, ValueError):
+                errors.append(f"Invalid percentage for {split.get('person', 'unknown')}")
+        
+        if abs(total_percentage - Decimal('100')) > Decimal('0.01'):
+            errors.append(f"Percentages must total 100% (current total: {total_percentage}%)")
+    
     return errors
 
 @api.route('/expenses', methods=['POST'])
@@ -59,23 +133,30 @@ def create_expense():
             db.session.add(person)
             db.session.flush()  # Get the ID
         
+        # Determine split method
+        split_method_str = data.get('split_method', 'equal')
+        split_method = SplitMethod(split_method_str)
+        
         # Create the expense
         expense = Expense(
             amount=Decimal(str(data['amount'])),
             description=data['description'].strip(),
             paid_by_id=person.id,
-            split_method=SplitMethod.EQUAL
+            split_method=split_method
         )
         db.session.add(expense)
         db.session.flush()  # Get the expense ID
         
-        # Get all people for equal split (or use participants if provided)
-        participants = data.get('participants', [paid_by_name])
-        if paid_by_name not in participants:
-            participants.append(paid_by_name)
-        
-        # Create equal splits
-        SettlementCalculator.create_equal_splits(expense.id, participants)
+        # Create splits based on method
+        if split_method_str == 'equal':
+            # Get all people for equal split (or use participants if provided)
+            participants = data.get('participants', [paid_by_name])
+            if paid_by_name not in participants:
+                participants.append(paid_by_name)
+            SettlementCalculator.create_equal_splits(expense.id, participants)
+        elif split_method_str in ['exact', 'percentage']:
+            # Create custom splits
+            SettlementCalculator.create_custom_splits(expense.id, data['splits'], split_method_str)
         
         db.session.commit()
         
@@ -131,6 +212,9 @@ def update_expense(expense_id):
         if 'description' in data:
             expense.description = data['description'].strip()
         
+        if 'split_method' in data:
+            expense.split_method = SplitMethod(data['split_method'])
+        
         if 'paid_by' in data:
             paid_by_name = data['paid_by'].strip()
             person = Person.query.filter_by(name=paid_by_name).first()
@@ -140,13 +224,17 @@ def update_expense(expense_id):
                 db.session.flush()
             expense.paid_by_id = person.id
         
-        # If amount changed or participants changed, recreate splits
-        if 'amount' in data or 'participants' in data:
-            participants = data.get('participants', [expense.payer.name])
-            if expense.payer.name not in participants:
-                participants.append(expense.payer.name)
+        # If amount changed or split method/participants changed, recreate splits
+        if 'amount' in data or 'participants' in data or 'split_method' in data or 'splits' in data:
+            split_method_str = data.get('split_method', expense.split_method.value)
             
-            SettlementCalculator.create_equal_splits(expense.id, participants)
+            if split_method_str == 'equal':
+                participants = data.get('participants', [expense.payer.name])
+                if expense.payer.name not in participants:
+                    participants.append(expense.payer.name)
+                SettlementCalculator.create_equal_splits(expense.id, participants)
+            elif split_method_str in ['exact', 'percentage'] and 'splits' in data:
+                SettlementCalculator.create_custom_splits(expense.id, data['splits'], split_method_str)
         
         db.session.commit()
         

@@ -1,0 +1,53 @@
+Implement comprehensive expense splitting options in the Split App with the following exact specifications:
+
+1. API Enhancement for Split Methods
+Modify the POST /expenses and PUT /expenses/:id endpoints to accept a split_method parameter with values: "equal", "exact", "percentage"
+Add splits array parameter to specify custom splits:
+{
+  "amount": 100.00,
+  "description": "Dinner",
+  "paid_by": "Alice",
+  "split_method": "exact",
+  "splits": [
+    {"person": "Alice", "amount": 40.00},
+    {"person": "Bob", "amount": 35.00},
+    {"person": "Charlie", "amount": 25.00}
+  ]
+}
+2. Split Method Implementations
+Equal Split: Current behavior (default)
+Exact Amount Split: Users specify exact amounts for each person
+Percentage Split: Users specify percentages that must total 100%
+3. Enhanced Validation
+For exact splits: Validate that split amounts sum to total expense amount
+For percentage splits: Validate percentages sum to 100%
+Ensure all specified people exist or are auto-created
+Validate no duplicate people in splits array
+4. Web Interface Updates
+Add split method selection (radio buttons/dropdown) to expense forms
+Add dynamic UI to specify custom splits based on selected method
+Update expense display to show split details
+Add JavaScript for real-time split calculation and validation
+5. Database Schema Verification
+Ensure ExpenseSplit model properly handles percentage and exact amount storage
+Verify SplitMethod enum includes all three options
+6. Settlement Calculator Updates
+Ensure settlement calculations work correctly with all split methods
+Maintain precision with decimal calculations for all split types
+7. Error Handling
+Return specific error messages for split validation failures
+Handle edge cases (rounding errors, invalid splits)
+Proper HTTP status codes (400 for validation errors)
+8. Testing Requirements
+Test all three split methods via API
+Test validation for invalid split combinations
+Verify settlement calculations remain accurate
+Test web interface functionality
+Implementation Priority:
+
+First: Enhance API routes to accept split parameters
+Second: Update settlement calculator for custom splits
+Third: Add web interface split selection
+Fourth: Comprehensive validation and error handling
+Fifth: Testing and edge case handling
+Expected Outcome: The app should support all expense splitting methods as specified in the requirements, with both API and web interface allowing users to choose between equal, exact amount, and percentage-based splits while maintaining accurate settlement calculations."

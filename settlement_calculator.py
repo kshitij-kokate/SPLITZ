@@ -136,3 +136,69 @@ class SettlementCalculator:
             db.session.add(split)
         
         db.session.commit()
+    
+    @staticmethod
+    def create_custom_splits(expense_id: int, splits_data: List[Dict], split_method: str) -> None:
+        """
+        Create custom splits for an expense (exact amounts or percentages).
+        """
+        from app import db
+        
+        expense = Expense.query.get(expense_id)
+        if not expense:
+            raise ValueError("Expense not found")
+        
+        # Clear existing splits
+        ExpenseSplit.query.filter_by(expense_id=expense_id).delete()
+        
+        for split_data in splits_data:
+            person_name = split_data['person'].strip()
+            person = Person.query.filter_by(name=person_name).first()
+            if not person:
+                person = Person(name=person_name)
+                db.session.add(person)
+                db.session.flush()  # Get the ID
+            
+            if split_method == 'exact':
+                # Use the provided exact amount
+                split_amount = Decimal(str(split_data['amount'])).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                percentage = (split_amount / expense.amount * 100).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            elif split_method == 'percentage':
+                # Calculate amount from percentage
+                percentage = Decimal(str(split_data['percentage'])).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                split_amount = (expense.amount * percentage / 100).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            else:
+                raise ValueError(f"Invalid split method: {split_method}")
+            
+            split = ExpenseSplit(
+                expense_id=expense_id,
+                person_id=person.id,
+                amount=split_amount,
+                percentage=percentage
+            )
+            db.session.add(split)
+        
+        # Handle rounding differences for exact amounts
+        if split_method == 'exact':
+            splits = ExpenseSplit.query.filter_by(expense_id=expense_id).all()
+            total_splits = sum(split.amount for split in splits)
+            diff = expense.amount - total_splits
+            
+            if abs(diff) > Decimal('0.01'):
+                # Adjust the first split to handle rounding
+                if splits:
+                    splits[0].amount += diff
+                    splits[0].percentage = (splits[0].amount / expense.amount * 100).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        
+        # Handle rounding differences for percentage amounts
+        elif split_method == 'percentage':
+            splits = ExpenseSplit.query.filter_by(expense_id=expense_id).all()
+            total_splits = sum(split.amount for split in splits)
+            diff = expense.amount - total_splits
+            
+            if abs(diff) > Decimal('0.01'):
+                # Adjust the last split to handle rounding
+                if splits:
+                    splits[-1].amount += diff
+        
+        db.session.commit()
