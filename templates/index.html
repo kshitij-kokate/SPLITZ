@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Split App{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+        </h1>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-receipt fa-2x text-primary mb-3"></i>
+                <h3>{{ total_expenses }}</h3>
+                <p class="text-muted">Total Expenses</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-2x text-success mb-3"></i>
+                <h3>{{ total_people }}</h3>
+                <p class="text-muted">People Involved</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-dollar-sign fa-2x text-warning mb-3"></i>
+                <h3>${{ "%.2f"|format(balances.values()|map(attribute='total_paid')|sum if balances else 0) }}</h3>
+                <p class="text-muted">Total Spent</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2 d-md-flex">
+                    <a href="{{ url_for('web.expenses') }}" class="btn btn-primary me-md-2">
+                        <i class="fas fa-plus me-2"></i>Add Expense
+                    </a>
+                    <a href="{{ url_for('web.settlements') }}" class="btn btn-secondary">
+                        <i class="fas fa-calculator me-2"></i>View Settlements
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Expenses -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-clock me-2"></i>Recent Expenses
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_expenses %}
+                    <div class="list-group list-group-flush">
+                        {% for expense in recent_expenses %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ expense.description }}</strong><br>
+                                    <small class="text-muted">Paid by {{ expense.payer.name }}</small>
+                                </div>
+                                <span class="badge bg-primary rounded-pill">${{ "%.2f"|format(expense.amount) }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="mt-3">
+                        <a href="{{ url_for('web.expenses') }}" class="btn btn-sm btn-outline-primary">
+                            View All Expenses <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                        <p>No expenses recorded yet</p>
+                        <a href="{{ url_for('web.expenses') }}" class="btn btn-primary">Add Your First Expense</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Current Balances -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-balance-scale me-2"></i>Current Balances
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if balances %}
+                    <div class="list-group list-group-flush">
+                        {% for person_name, balance_info in balances.items() %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ balance_info.name }}</strong><br>
+                                    <small class="text-muted">
+                                        Paid: ${{ "%.2f"|format(balance_info.total_paid) }} | 
+                                        Share: ${{ "%.2f"|format(balance_info.fair_share) }}
+                                    </small>
+                                </div>
+                                {% if balance_info.balance > 0 %}
+                                    <span class="badge bg-success rounded-pill">+${{ "%.2f"|format(balance_info.balance) }}</span>
+                                {% elif balance_info.balance < 0 %}
+                                    <span class="badge bg-danger rounded-pill">-${{ "%.2f"|format(abs(balance_info.balance)) }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary rounded-pill">$0.00</span>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="mt-3">
+                        <a href="{{ url_for('web.settlements') }}" class="btn btn-sm btn-outline-secondary">
+                            View Settlements <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-calculator fa-3x mb-3"></i>
+                        <p>No balances to calculate</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- API Information -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-code me-2"></i>API Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">This Split App provides a RESTful API for programmatic access:</p>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Core Endpoints:</h6>
+                        <ul class="list-unstyled">
+                            <li><code>GET /api/expenses</code> - List all expenses</li>
+                            <li><code>POST /api/expenses</code> - Create new expense</li>
+                            <li><code>PUT /api/expenses/:id</code> - Update expense</li>
+                            <li><code>DELETE /api/expenses/:id</code> - Delete expense</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Settlement Endpoints:</h6>
+                        <ul class="list-unstyled">
+                            <li><code>GET /api/people</code> - List all people</li>
+                            <li><code>GET /api/balances</code> - Current balances</li>
+                            <li><code>GET /api/settlements</code> - Optimal settlements</li>
+                            <li><code>GET /api/health</code> - Health check</li>
+                        </ul>
+                    </div>
+                </div>
+                <small class="text-muted">
+                    All responses follow the format: <code>{"success": boolean, "data": object, "message": string}</code>
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

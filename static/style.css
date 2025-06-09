@@ -1,0 +1,354 @@
+/* Custom styles for Split App */
+/* Built on top of Bootstrap dark theme */
+
+:root {
+    --split-primary: #0d6efd;
+    --split-success: #198754;
+    --split-danger: #dc3545;
+    --split-warning: #ffc107;
+    --split-info: #0dcaf0;
+    --split-light: #f8f9fa;
+    --split-dark: #212529;
+}
+
+/* Base layout improvements */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+}
+
+/* Navigation enhancements */
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.25rem;
+}
+
+.nav-link.active {
+    font-weight: 600;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 0.375rem;
+}
+
+/* Card improvements */
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.3);
+    transition: box-shadow 0.15s ease-in-out;
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.4);
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.125);
+    font-weight: 600;
+}
+
+/* Table improvements */
+.table-hover tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.table th {
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.875rem;
+    letter-spacing: 0.5px;
+}
+
+/* Form enhancements */
+.form-control:focus {
+    border-color: var(--split-primary);
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.form-check-input:checked {
+    background-color: var(--split-primary);
+    border-color: var(--split-primary);
+}
+
+/* Button improvements */
+.btn {
+    font-weight: 500;
+    transition: all 0.15s ease-in-out;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #0d6efd 0%, #0056b3 100%);
+    border: none;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #198754 0%, #146c43 100%);
+    border: none;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #b02a37 100%);
+    border: none;
+}
+
+/* Badge enhancements */
+.badge {
+    font-size: 0.75em;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* Alert improvements */
+.alert {
+    border: none;
+    border-left: 4px solid;
+}
+
+.alert-success {
+    border-left-color: var(--split-success);
+}
+
+.alert-danger {
+    border-left-color: var(--split-danger);
+}
+
+.alert-info {
+    border-left-color: var(--split-info);
+}
+
+.alert-warning {
+    border-left-color: var(--split-warning);
+}
+
+/* Settlement-specific styles */
+.settlement-card {
+    transition: transform 0.2s ease-in-out;
+}
+
+.settlement-card:hover {
+    transform: scale(1.02);
+}
+
+.balance-positive {
+    color: var(--split-success) !important;
+    font-weight: 600;
+}
+
+.balance-negative {
+    color: var(--split-danger) !important;
+    font-weight: 600;
+}
+
+.balance-zero {
+    color: var(--bs-secondary) !important;
+}
+
+/* API result display */
+#apiResult pre,
+#settlementApiResult pre {
+    font-size: 0.875rem;
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Loading states */
+.btn:disabled {
+    opacity: 0.7;
+    transform: none !important;
+}
+
+.loading-spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Empty state styles */
+.empty-state {
+    padding: 3rem 1rem;
+    text-align: center;
+    color: var(--bs-secondary);
+}
+
+.empty-state i {
+    opacity: 0.5;
+    margin-bottom: 1rem;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .btn-group-vertical .btn {
+        margin-bottom: 0.5rem;
+    }
+    
+    .d-flex.gap-2 {
+        flex-direction: column;
+        gap: 0.5rem !important;
+    }
+    
+    .settlement-summary .col-md-4 {
+        margin-bottom: 1rem;
+    }
+}
+
+/* Print styles */
+@media print {
+    .navbar,
+    .btn,
+    .alert,
+    #apiResult,
+    #settlementApiResult {
+        display: none !important;
+    }
+    
+    .card {
+        border: 1px solid #000 !important;
+        box-shadow: none !important;
+    }
+    
+    .table {
+        font-size: 0.8rem;
+    }
+}
+
+/* Dark theme specific adjustments */
+[data-bs-theme="dark"] {
+    --bs-body-bg: #0d1117;
+    --bs-body-color: #f0f6fc;
+}
+
+[data-bs-theme="dark"] .card {
+    background-color: #161b22;
+    border-color: #30363d;
+}
+
+[data-bs-theme="dark"] .table {
+    --bs-table-bg: transparent;
+    --bs-table-striped-bg: rgba(255, 255, 255, 0.05);
+}
+
+[data-bs-theme="dark"] .form-control {
+    background-color: #0d1117;
+    border-color: #30363d;
+    color: #f0f6fc;
+}
+
+[data-bs-theme="dark"] .form-control:focus {
+    background-color: #0d1117;
+    border-color: var(--split-primary);
+    color: #f0f6fc;
+}
+
+/* Accessibility improvements */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Focus indicators */
+.btn:focus,
+.form-control:focus,
+.form-check-input:focus {
+    outline: 2px solid var(--split-primary);
+    outline-offset: 2px;
+}
+
+/* Animation for settlement calculations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.settlement-item {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+/* Custom scrollbar for code blocks */
+pre::-webkit-scrollbar {
+    width: 8px;
+}
+
+pre::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+pre::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+}
+
+pre::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/* Utility classes */
+.text-money {
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+}
+
+.border-start-primary {
+    border-left: 4px solid var(--split-primary) !important;
+}
+
+.border-start-success {
+    border-left: 4px solid var(--split-success) !important;
+}
+
+.border-start-danger {
+    border-left: 4px solid var(--split-danger) !important;
+}
+
+/* Footer styling */
+footer {
+    margin-top: auto;
+    border-top: 1px solid rgba(255, 255, 255, 0.125);
+}
+
+/* Make the main content area full height */
+html, body {
+    height: 100%;
+}
+
+#root, .d-flex.flex-column {
+    min-height: 100vh;
+}
+
+main {
+    flex: 1;
+}
