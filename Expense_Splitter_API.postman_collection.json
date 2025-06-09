@@ -1,0 +1,469 @@
+{
+	"info": {
+		"_postman_id": "expense-splitter-api",
+		"name": "Expense Splitter API - Production Collection",
+		"description": "Comprehensive API collection for testing the production-ready Expense Splitter API. This collection includes all endpoints with sample data, validation tests, and edge cases.\n\n**Base URL:** Replace {{base_url}} with your deployed API URL\n**Sample People:** Shantanu, Sanket, Om\n**Currency:** All amounts in rupees (₹)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Expense Management",
+			"description": "Complete CRUD operations for expense management with various split methods",
+			"item": [
+				{
+					"name": "Add Expense - Dinner (₹600, paid by Shantanu)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 600,\n  \"description\": \"Dinner\",\n  \"paid_by\": \"Shantanu\",\n  \"split_method\": \"equal\",\n  \"participants\": [\"Shantanu\", \"Sanket\", \"Om\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/expenses",
+							"host": ["{{base_url}}"],
+							"path": ["api", "expenses"]
+						},
+						"description": "Creates a dinner expense of ₹600 paid by Shantanu, split equally among three people (₹200 each).\n\n**Expected Response:**\n- Status: 201 Created\n- Response includes expense details with calculated splits\n- Each person owes ₹200 for this expense"
+					}
+				},
+				{
+					"name": "Add Expense - Groceries (₹450, paid by Sanket)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 450,\n  \"description\": \"Groceries\",\n  \"paid_by\": \"Sanket\",\n  \"split_method\": \"equal\",\n  \"participants\": [\"Shantanu\", \"Sanket\", \"Om\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/expenses",
+							"host": ["{{base_url}}"],
+							"path": ["api", "expenses"]
+						},
+						"description": "Creates a groceries expense of ₹450 paid by Sanket, split equally among three people (₹150 each)."
+					}
+				},
+				{
+					"name": "Add Expense - Petrol (₹300, paid by Om)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 300,\n  \"description\": \"Petrol\",\n  \"paid_by\": \"Om\",\n  \"split_method\": \"equal\",\n  \"participants\": [\"Shantanu\", \"Sanket\", \"Om\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/expenses",
+							"host": ["{{base_url}}"],
+							"path": ["api", "expenses"]
+						},
+						"description": "Creates a petrol expense of ₹300 paid by Om, split equally among three people (₹100 each)."
+					}
+				},
+				{
+					"name": "Add Expense - Movie Tickets (₹500, paid by Shantanu)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 500,\n  \"description\": \"Movie Tickets\",\n  \"paid_by\": \"Shantanu\",\n  \"split_method\": \"equal\",\n  \"participants\": [\"Shantanu\", \"Sanket\", \"Om\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/expenses",
+							"host": ["{{base_url}}"],
+							"path": ["api", "expenses"]
+						},
+						"description": "Creates a movie tickets expense of ₹500 paid by Shantanu, split equally among three people (₹166.67 each with rounding)."
+					}
+				},
+				{
+					"name": "Add Expense - Pizza (₹280, paid by Sanket)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 280,\n  \"description\": \"Pizza\",\n  \"paid_by\": \"Sanket\",\n  \"split_method\": \"equal\",\n  \"participants\": [\"Shantanu\", \"Sanket\", \"Om\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/expenses",
+							"host": ["{{base_url}}"],
+							"path": ["api", "expenses"]
+						},
+						"description": "Creates a pizza expense of ₹280 paid by Sanket, split equally among three people (₹93.33 each with rounding)."
+					}
+				},
+				{
+					"name": "Add Expense - Custom Exact Split",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 100,\n  \"description\": \"Shopping with custom split\",\n  \"paid_by\": \"Shantanu\",\n  \"split_method\": \"exact\",\n  \"splits\": [\n    {\"person\": \"Shantanu\", \"amount\": 40.00},\n    {\"person\": \"Sanket\", \"amount\": 35.00},\n    {\"person\": \"Om\", \"amount\": 25.00}\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/expenses",
+							"host": ["{{base_url}}"],
+							"path": ["api", "expenses"]
+						},
+						"description": "Demonstrates exact amount splitting where each person pays a specific amount. Total must equal expense amount."
+					}
+				},
+				{
+					"name": "Add Expense - Percentage Split",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 150,\n  \"description\": \"Project expenses\",\n  \"paid_by\": \"Shantanu\",\n  \"split_method\": \"percentage\",\n  \"splits\": [\n    {\"person\": \"Shantanu\", \"percentage\": 50.0},\n    {\"person\": \"Sanket\", \"percentage\": 30.0},\n    {\"person\": \"Om\", \"percentage\": 20.0}\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/expenses",
+							"host": ["{{base_url}}"],
+							"path": ["api", "expenses"]
+						},
+						"description": "Demonstrates percentage-based splitting. Percentages must total 100%."
+					}
+				},
+				{
+					"name": "List All Expenses",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/expenses",
+							"host": ["{{base_url}}"],
+							"path": ["api", "expenses"]
+						},
+						"description": "Retrieves all expenses with complete details including splits and participants.\n\n**Expected Response:**\n- Array of expense objects\n- Each expense includes splits breakdown\n- Ordered by creation date (newest first)"
+					}
+				},
+				{
+					"name": "Update Expense - Change Petrol to ₹350",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 350,\n  \"description\": \"Petrol (Updated)\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/expenses/3",
+							"host": ["{{base_url}}"],
+							"path": ["api", "expenses", "3"]
+						},
+						"description": "Updates the petrol expense amount from ₹300 to ₹350. This will recalculate all splits automatically.\n\n**Note:** Replace '3' with the actual expense ID from your data."
+					}
+				},
+				{
+					"name": "Delete Expense - Remove Pizza",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/expenses/5",
+							"host": ["{{base_url}}"],
+							"path": ["api", "expenses", "5"]
+						},
+						"description": "Deletes the pizza expense. This will update all balance calculations automatically.\n\n**Note:** Replace '5' with the actual expense ID for the pizza expense."
+					}
+				}
+			]
+		},
+		{
+			"name": "Settlements & People",
+			"description": "Endpoints for people management, balance calculations, and settlement optimization",
+			"item": [
+				{
+					"name": "Get All People",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/people",
+							"host": ["{{base_url}}"],
+							"path": ["api", "people"]
+						},
+						"description": "Retrieves all people in the system. Should show: Shantanu, Sanket, Om (and any others created through expenses).\n\n**Expected Response:**\n- Array of person objects\n- Each person has id, name, and created_at"
+					}
+				},
+				{
+					"name": "Get Current Balances",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/balances",
+							"host": ["{{base_url}}"],
+							"path": ["api", "balances"]
+						},
+						"description": "Calculates current balances for all people after all transactions.\n\n**Response includes:**\n- total_paid: Amount each person has paid\n- fair_share: Amount each person should pay\n- balance: Difference (positive = owed money, negative = owes money)\n\n**Expected for sample data:**\n- Shantanu: Positive balance (paid more than fair share)\n- Sanket: Small positive or negative balance\n- Om: Negative balance (owes money)"
+					}
+				},
+				{
+					"name": "Get Settlement Summary",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/settlements",
+							"host": ["{{base_url}}"],
+							"path": ["api", "settlements"]
+						},
+						"description": "Returns optimal settlement transactions to balance all debts with minimum number of transactions.\n\n**Algorithm:**\n- Uses greedy approach to minimize transaction count\n- Matches largest creditor with largest debtor\n- Continues until all balances are settled\n\n**Expected Response:**\n- Array of settlement objects\n- Each settlement shows: from, to, amount\n- Usually 1-2 transactions for 3 people"
+					}
+				},
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/health",
+							"host": ["{{base_url}}"],
+							"path": ["api", "health"]
+						},
+						"description": "Simple health check endpoint to verify API is running.\n\n**Expected Response:**\n- Status: 200 OK\n- Message indicating service is healthy"
+					}
+				}
+			]
+		},
+		{
+			"name": "Edge Cases & Validation",
+			"description": "Test scenarios for validation rules, error handling, and edge cases",
+			"item": [
+				{
+					"name": "Add Expense - Invalid (negative amount)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": -100,\n  \"description\": \"Invalid negative amount\",\n  \"paid_by\": \"Shantanu\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/expenses",
+							"host": ["{{base_url}}"],
+							"path": ["api", "expenses"]
+						},
+						"description": "Tests validation for negative amounts.\n\n**Expected Response:**\n- Status: 400 Bad Request\n- Error message: \"Amount must be greater than 0\""
+					}
+				},
+				{
+					"name": "Add Expense - Invalid (empty description)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 100,\n  \"description\": \"\",\n  \"paid_by\": \"Shantanu\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/expenses",
+							"host": ["{{base_url}}"],
+							"path": ["api", "expenses"]
+						},
+						"description": "Tests validation for empty description.\n\n**Expected Response:**\n- Status: 400 Bad Request\n- Error message: \"Description is required and cannot be empty\""
+					}
+				},
+				{
+					"name": "Add Expense - Invalid (missing paid_by)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 100,\n  \"description\": \"Missing payer field\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/expenses",
+							"host": ["{{base_url}}"],
+							"path": ["api", "expenses"]
+						},
+						"description": "Tests validation for missing paid_by field.\n\n**Expected Response:**\n- Status: 400 Bad Request\n- Error message: \"paid_by is required and cannot be empty\""
+					}
+				},
+				{
+					"name": "Add Expense - Invalid Exact Split (wrong total)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 100,\n  \"description\": \"Invalid exact split\",\n  \"paid_by\": \"Shantanu\",\n  \"split_method\": \"exact\",\n  \"splits\": [\n    {\"person\": \"Shantanu\", \"amount\": 40.00},\n    {\"person\": \"Sanket\", \"amount\": 35.00},\n    {\"person\": \"Om\", \"amount\": 30.00}\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/expenses",
+							"host": ["{{base_url}}"],
+							"path": ["api", "expenses"]
+						},
+						"description": "Tests validation for exact splits where amounts don't equal expense total (105 vs 100).\n\n**Expected Response:**\n- Status: 400 Bad Request\n- Error message indicating split amounts must equal total"
+					}
+				},
+				{
+					"name": "Add Expense - Invalid Percentage Split (over 100%)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 100,\n  \"description\": \"Invalid percentage split\",\n  \"paid_by\": \"Shantanu\",\n  \"split_method\": \"percentage\",\n  \"splits\": [\n    {\"person\": \"Shantanu\", \"percentage\": 50.0},\n    {\"person\": \"Sanket\", \"percentage\": 40.0},\n    {\"person\": \"Om\", \"percentage\": 30.0}\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/expenses",
+							"host": ["{{base_url}}"],
+							"path": ["api", "expenses"]
+						},
+						"description": "Tests validation for percentage splits that don't total 100% (120% in this case).\n\n**Expected Response:**\n- Status: 400 Bad Request\n- Error message indicating percentages must total 100%"
+					}
+				},
+				{
+					"name": "Update Non-existent Expense",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 200,\n  \"description\": \"Updated expense\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/expenses/999",
+							"host": ["{{base_url}}"],
+							"path": ["api", "expenses", "999"]
+						},
+						"description": "Tests updating a non-existent expense.\n\n**Expected Response:**\n- Status: 404 Not Found\n- Error message: \"Expense not found\""
+					}
+				},
+				{
+					"name": "Delete Non-existent Expense",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/expenses/999",
+							"host": ["{{base_url}}"],
+							"path": ["api", "expenses", "999"]
+						},
+						"description": "Tests deleting a non-existent expense.\n\n**Expected Response:**\n- Status: 404 Not Found\n- Error message: \"Expense not found\""
+					}
+				},
+				{
+					"name": "Get Balances - Empty State",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/balances",
+							"host": ["{{base_url}}"],
+							"path": ["api", "balances"]
+						},
+						"description": "Tests balance calculation when no expenses exist (run this after deleting all expenses).\n\n**Expected Response:**\n- Status: 200 OK\n- Empty array or zero balances for all people"
+					}
+				},
+				{
+					"name": "Invalid JSON Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 100,\n  \"description\": \"Invalid JSON\",\n  \"paid_by\": \"Shantanu\",\n  // This comment makes it invalid JSON\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/expenses",
+							"host": ["{{base_url}}"],
+							"path": ["api", "expenses"]
+						},
+						"description": "Tests handling of malformed JSON requests.\n\n**Expected Response:**\n- Status: 400 Bad Request\n- Error message about invalid JSON"
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://your-replit-url.replit.app",
+			"description": "Base URL for the deployed API. Replace with your actual Replit deployment URL."
+		}
+	]
+}

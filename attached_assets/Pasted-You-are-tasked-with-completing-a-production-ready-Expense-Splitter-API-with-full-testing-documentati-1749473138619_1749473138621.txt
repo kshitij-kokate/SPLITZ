@@ -1,0 +1,114 @@
+You are tasked with completing a production-ready Expense Splitter API with full testing documentation. Your current Flask application is running and needs to be prepared for submission with all required deliverables.
+
+Your Current Status:
+✅ Backend API is implemented and running on Replit
+✅ Database models and business logic are complete
+✅ Sample data has been populated
+🔄 Need to prepare deployment and testing documentation
+Required Deliverables to Complete:
+1. Deployment Preparation
+Your Flask app is already running on Replit at: https://your-repl-name.your-username.repl.co
+Base API URL: https://your-repl-name.your-username.repl.co/api
+Ensure your Replit deployment is public and accessible
+2. Create Comprehensive Postman Collection
+Create a Postman collection with these exact folders and requests:
+
+📁 Expense Management
+
+POST /api/expenses - Add Expense - Dinner (₹600, paid by Shantanu)
+POST /api/expenses - Add Expense - Groceries (₹450, paid by Sanket)
+POST /api/expenses - Add Expense - Petrol (₹300, paid by Om)
+POST /api/expenses - Add Expense - Movie Tickets (₹500, paid by Shantanu)
+POST /api/expenses - Add Expense - Pizza (₹280, paid by Sanket)
+GET /api/expenses - List All Expenses
+PUT /api/expenses/3 - Update Expense - Change Petrol to ₹350
+DELETE /api/expenses/5 - Delete Expense - Remove Pizza
+📁 Settlements & People
+
+GET /api/people - Get All People (should show: Shantanu, Sanket, Om)
+GET /api/balances - Get Current Balances (after all transactions)
+GET /api/settlements - Get Settlement Summary (optimized transactions)
+📁 Edge Cases & Validation
+
+POST /api/expenses - Add Expense - Invalid (negative amount)
+POST /api/expenses - Add Expense - Invalid (empty description)
+POST /api/expenses - Add Expense - Invalid (missing paid_by)
+PUT /api/expenses/999 - Update Non-existent Expense
+DELETE /api/expenses/999 - Delete Non-existent Expense
+GET /api/balances - Get Balances - With No Expenses
+3. Sample Request Bodies
+Valid Expense Creation:
+
+{
+  "amount": 600,
+  "description": "Dinner",
+  "paid_by": "Shantanu",
+  "split_method": "equal",
+  "participants": ["Shantanu", "Sanket", "Om"]
+}
+Custom Split Example:
+
+{
+  "amount": 100,
+  "description": "Shopping",
+  "paid_by": "Shantanu",
+  "split_method": "exact",
+  "splits": [
+    {"person": "Shantanu", "amount": 40.00},
+    {"person": "Sanket", "amount": 35.00},
+    {"person": "Om", "amount": 25.00}
+  ]
+}
+Invalid Examples for Testing:
+
+{"amount": -100, "description": "Invalid negative", "paid_by": "Shantanu"}
+{"amount": 100, "description": "", "paid_by": "Shantanu"}
+{"amount": 100, "description": "Missing payer"}
+4. Documentation Requirements
+For each Postman request, add descriptions that include:
+
+Purpose of the endpoint
+Expected response format
+Success/error scenarios
+Sample response data
+5. Final Submission Steps
+Export Postman Collection:
+
+Export as JSON from Postman
+Ensure all requests use your Replit deployment URL
+Test that all requests work with live API
+Create GitHub Gist:
+
+Upload collection JSON to https://gist.github.com/
+Make it public and shareable
+Include README with API base URL and setup instructions
+Create Project README:
+
+Setup instructions for local development
+API documentation with all endpoints
+Database schema explanation
+Deployment instructions
+Verification Checklist:
+
+ All API endpoints are working and accessible publicly
+ Postman collection imports and runs successfully
+ Sample data is pre-populated (Shantanu, Sanket, Om)
+ All validation scenarios are tested
+ Settlement calculations are accurate
+ Error handling works properly
+ GitHub Gist is public and accessible
+6. Expected API Response Format
+All responses should follow this structure:
+
+{
+  "success": true/false,
+  "data": {...},
+  "message": "Status message"
+}
+7. Testing Scenarios to Verify
+Equal splits work correctly
+Balance calculations are accurate
+Settlement optimization minimizes transactions
+Validation catches all error cases
+CRUD operations work for all entities
+API handles edge cases gracefully
