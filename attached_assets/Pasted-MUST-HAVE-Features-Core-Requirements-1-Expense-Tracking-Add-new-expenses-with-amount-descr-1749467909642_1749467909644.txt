@@ -1,0 +1,66 @@
+MUST HAVE Features (Core Requirements) 
+1. Expense Tracking 
+● Add new expenses with amount, description, and who paid 
+● People are automatically added when mentioned in expenses (no separate person 
+creation) 
+● View all expenses with complete details 
+● Edit or delete existing expenses 
+● Option to select percentage/share/exact amount for an expense 
+2. Settlement Calculations 
+● Calculate how much each person has spent vs their fair share 
+● Determine who owes money and who should receive money 
+● Show simplified settlements (minimize number of transactions needed) 
+● Provide clear summary of who should pay whom and how much 
+3. Data Validation & Error Handling 
+● Validate all inputs (positive amounts, required fields, valid person names) 
+● Handle edge cases gracefully (empty expenses, invalid calculations) 
+● Return clear, helpful error messages 
+● Proper HTTP status codes for all scenarios 
+Expected API Endpoints 
+# Expense Management   
+GET    /expenses                  
+POST   /expenses                  
+PUT    /expenses/:id              
+DELETE /expenses/:id              
+# Settlement Calculations 
+GET    /settlements               
+GET    /balances                  
+GET    /people                    
+# List all expenses 
+# Add new expense   
+# Update expense 
+# Delete expense 
+# Get current settlement summary 
+# Show each person's balance (owes/owed) 
+# List all people (derived from expenses) 
+Example API Payloads: 
+// POST /expenses 
+{ 
+"amount": 60.00, 
+"description": "Dinner at restaurant",  
+"paid_by": "Shantanu" 
+} 
+// Response format 
+{ 
+"success": true, 
+"data": {...}, 
+"message": "Expense added successfully" 
+} 
+�
+�
+ OPTIONAL Features (Extra Credit) 
+1. Recurring Transaction 
+● Automatically track and split regular expenses like rent or subscriptions monthly/weekly, 
+etc. 
+2. Expense Categories 
+● Assign categories to expenses (Food, Travel, Utilities, Entertainment, Other) 
+● Show spending breakdown by category 
+● Category-wise summaries and totals 
+3. Enhanced Analytics 
+● Monthly spending summaries 
+● Individual vs group spending patterns 
+● Most expensive categories or transactions 
+4. Simple Web Interface 
+● Basic HTML forms to add people and expenses 
+● Display current balances and settlements 
+● Simple dashboard showing key information
