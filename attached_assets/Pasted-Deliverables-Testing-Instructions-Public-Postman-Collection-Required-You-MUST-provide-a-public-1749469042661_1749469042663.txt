@@ -1,0 +1,71 @@
+Deliverables & Testing Instructions 
+Public Postman Collection Required 
+You MUST provide a publicly accessible Postman collection that we can import and test 
+immediately without any local setup. 
+Steps to Submit: 
+1. Deploy your backend to a free hosting service: 
+2. Create Postman collection with: 
+○ All required API endpoints 
+○ Sample requests with realistic test data 
+○ Pre-populated data that demonstrates the system working 
+○ Clear folder organization 
+3. Export and share your collection: 
+○ Export as JSON from Postman 
+○ Upload to GitHub Gist: https://gist.github.com/ 
+○ Make the gist public and shareable 
+○ Include your deployed API base URL in collection 
+4. Test data setup: 
+○ Your APIs should work immediately when we import the collection 
+○ Pre-populate with sample people: Shantanu, Sanket, Om 
+○ Include sample expenses that show different scenarios 
+○ Settlement calculations should show realistic results 
+�
+�
+ Expense Splitter APIs 
+�
+�
+ Expense Management 
+    ➤ Add Expense - Dinner (₹600, paid by Shantanu) 
+    ➤ Add Expense - Groceries (₹450, paid by Sanket)   
+    ➤ Add Expense - Petrol (₹300, paid by Om) 
+    ➤ Add Expense - Movie Tickets (₹500, paid by Shantanu) 
+    ➤ Add Expense - Pizza (₹280, paid by Sanket) 
+    ➤ List All Expenses 
+    ➤ Update Expense - Change Petrol to ₹350 
+    ➤ Delete Expense - Remove Pizza 
+   
+  
+�
+�
+ Settlements & People   
+    ➤ Get All People (should show: Shantanu, Sanket, Om) 
+    ➤ Get Current Balances (after all transactions) 
+    ➤ Get Settlement Summary (optimized transactions) 
+   
+  
+�
+�
+ Edge Cases & Validation 
+    ➤ Add Expense - Invalid (negative amount) 
+    ➤ Add Expense - Invalid (empty description) 
+    ➤ Add Expense - Invalid (missing paid_by) 
+    ➤ Update Non-existent Expense 
+    ➤ Delete Non-existent Expense 
+    ➤ Get Balances - With No Expenses 
+ 
+Complete Submission Checklist: 
+1. Code Repository 
+● [ ] Git repository with clear README 
+● [ ] Setup instructions for local development 
+● [ ] Clean, commented code 
+● [ ] Database schema/setup scripts 
+2. Deployed Demo 
+● [ ] Working backend deployed on free hosting 
+● [ ] All APIs accessible via public URL 
+● [ ] Database hosted online (not local SQLite) 
+3. Postman Collection 
+● [ ] Public GitHub Gist with collection JSON 
+● [ ] Collection uses deployed API base URL 
+● [ ] All endpoints have working examples 
+● [ ] Pre-populated with test data 
+● [ ] Clear documentation in request descriptions 
