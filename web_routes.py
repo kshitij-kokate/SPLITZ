@@ -1,7 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
-from app import db
-from models import Person, Expense, ExpenseSplit
-from settlement_calculator import SettlementCalculator
+from mongo_models import PersonModel, ExpenseModel, BalanceCalculator
+from split_calculator import SplitCalculator
 from decimal import Decimal
 import logging
 
@@ -12,14 +11,18 @@ def index():
     """Homepage with overview"""
     try:
         # Get summary statistics
-        total_expenses = Expense.query.count()
-        total_people = Person.query.count()
+        expenses = ExpenseModel.get_all()
+        people = PersonModel.get_all()
+        total_expenses = len(expenses)
+        total_people = len(people)
         
-        # Get recent expenses
-        recent_expenses = Expense.query.order_by(Expense.created_at.desc()).limit(5).all()
+        # Get recent expenses (first 5)
+        recent_expenses = []
+        for expense in expenses[:5]:
+            recent_expenses.append(ExpenseModel.to_dict(expense))
         
         # Get current balances
-        balances = SettlementCalculator.calculate_balances()
+        balances = BalanceCalculator.calculate_balances()
         
         return render_template('index.html', 
                              total_expenses=total_expenses,
@@ -39,8 +42,10 @@ def index():
 def expenses():
     """Expenses management page"""
     try:
-        expenses = Expense.query.order_by(Expense.created_at.desc()).all()
-        people = Person.query.order_by(Person.name).all()
+        expenses_raw = ExpenseModel.get_all()
+        expenses = [ExpenseModel.to_dict(expense) for expense in expenses_raw]
+        people_raw = PersonModel.get_all()
+        people = [{'id': str(p['_id']), 'name': p['name']} for p in people_raw]
         
         return render_template('expenses.html', expenses=expenses, people=people)
     except Exception as e:
@@ -52,8 +57,8 @@ def expenses():
 def settlements():
     """Settlements page"""
     try:
-        balances = SettlementCalculator.calculate_balances()
-        settlements = SettlementCalculator.calculate_settlements()
+        balances = BalanceCalculator.calculate_balances()
+        settlements = BalanceCalculator.calculate_settlements()
         
         return render_template('settlements.html', 
                              balances=balances,
@@ -89,54 +94,50 @@ def add_expense():
             return redirect(url_for('web.expenses'))
         
         # Get or create the person who paid
-        person = Person.query.filter_by(name=paid_by).first()
-        if not person:
-            person = Person(name=paid_by)
-            db.session.add(person)
-            db.session.flush()
+        person = PersonModel.get_or_create(paid_by)
+        person_id = str(person['_id'])
         
         # Create the expense
-        expense = Expense(
-            amount=amount_decimal,
+        expense = ExpenseModel.create(
+            amount=float(amount_decimal),
             description=description,
-            paid_by_id=person.id
+            paid_by_id=person_id
         )
-        db.session.add(expense)
-        db.session.flush()
+        expense_id = str(expense['_id'])
         
         # Handle participants (default to all people if none selected)
         if not participants:
-            participants = [p.name for p in Person.query.all()]
+            all_people = PersonModel.get_all()
+            participants = [p['name'] for p in all_people]
         
         if paid_by not in participants:
             participants.append(paid_by)
         
         # Create equal splits
-        SettlementCalculator.create_equal_splits(expense.id, participants)
+        SplitCalculator.create_equal_splits(expense_id, participants)
         
-        db.session.commit()
         flash('Expense added successfully', 'success')
         
     except Exception as e:
-        db.session.rollback()
         logging.error(f"Error adding expense: {str(e)}")
         flash(f'Error adding expense: {str(e)}', 'error')
     
     return redirect(url_for('web.expenses'))
 
-@web.route('/delete_expense/<int:expense_id>', methods=['POST'])
+@web.route('/delete_expense/<expense_id>', methods=['POST'])
 def delete_expense(expense_id):
     """Delete an expense"""
     try:
-        expense = Expense.query.get(expense_id)
+        expense = ExpenseModel.find_by_id(expense_id)
         if not expense:
             flash('Expense not found', 'error')
         else:
-            db.session.delete(expense)
-            db.session.commit()
-            flash('Expense deleted successfully', 'success')
+            success = ExpenseModel.delete(expense_id)
+            if success:
+                flash('Expense deleted successfully', 'success')
+            else:
+                flash('Failed to delete expense', 'error')
     except Exception as e:
-        db.session.rollback()
         logging.error(f"Error deleting expense: {str(e)}")
         flash(f'Error deleting expense: {str(e)}', 'error')
     

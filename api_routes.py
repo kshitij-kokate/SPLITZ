@@ -238,21 +238,21 @@ def update_expense(expense_id):
         logging.error(f"Error updating expense: {str(e)}")
         return create_response(False, None, f"Internal server error: {str(e)}", 500)
 
-@api.route('/expenses/<int:expense_id>', methods=['DELETE'])
+@api.route('/expenses/<expense_id>', methods=['DELETE'])
 def delete_expense(expense_id):
     """Delete an expense"""
     try:
-        expense = Expense.query.get(expense_id)
+        expense = ExpenseModel.find_by_id(expense_id)
         if not expense:
             return create_response(False, None, "Expense not found", 404)
         
-        db.session.delete(expense)
-        db.session.commit()
-        
-        return create_response(True, None, "Expense deleted successfully")
+        success = ExpenseModel.delete(expense_id)
+        if success:
+            return create_response(True, None, "Expense deleted successfully")
+        else:
+            return create_response(False, None, "Failed to delete expense", 500)
         
     except Exception as e:
-        db.session.rollback()
         logging.error(f"Error deleting expense: {str(e)}")
         return create_response(False, None, f"Internal server error: {str(e)}", 500)
 
@@ -260,8 +260,14 @@ def delete_expense(expense_id):
 def get_people():
     """Get all people"""
     try:
-        people = Person.query.order_by(Person.name).all()
-        people_data = [person.to_dict() for person in people]
+        people = PersonModel.get_all()
+        people_data = []
+        for person in people:
+            people_data.append({
+                'id': str(person['_id']),
+                'name': person['name'],
+                'created_at': person['created_at'].isoformat() if person.get('created_at') else None
+            })
         
         return create_response(True, people_data, "People retrieved successfully")
         
@@ -273,7 +279,7 @@ def get_people():
 def get_balances():
     """Get current balances for all people"""
     try:
-        balances = SettlementCalculator.calculate_balances()
+        balances = BalanceCalculator.calculate_balances()
         balances_list = list(balances.values())
         
         return create_response(True, balances_list, "Balances calculated successfully")
@@ -286,7 +292,7 @@ def get_balances():
 def get_settlements():
     """Get optimal settlements to balance all debts"""
     try:
-        settlements = SettlementCalculator.calculate_settlements()
+        settlements = BalanceCalculator.calculate_settlements()
         
         return create_response(True, settlements, "Settlements calculated successfully")
         
