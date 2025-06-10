@@ -115,7 +115,6 @@ def add_expense():
         SettlementCalculator.create_equal_splits(expense.id, participants)
         
         db.session.commit()
-        
         flash('Expense added successfully', 'success')
         
     except Exception as e:
