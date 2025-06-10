@@ -180,11 +180,11 @@ def get_expenses():
         logging.error(f"Error retrieving expenses: {str(e)}")
         return create_response(False, None, f"Internal server error: {str(e)}", 500)
 
-@api.route('/expenses/<expense_id>', methods=['PUT'])
+@api.route('/expenses/<int:expense_id>', methods=['PUT'])
 def update_expense(expense_id):
     """Update an existing expense"""
     try:
-        expense = ExpenseModel.find_by_id(expense_id)
+        expense = Expense.query.get(expense_id)
         if not expense:
             return create_response(False, None, "Expense not found", 404)
         
@@ -194,72 +194,72 @@ def update_expense(expense_id):
         
         # Validate input if provided
         if 'amount' in data or 'description' in data or 'paid_by' in data:
-            payer = PersonModel.find_by_id(str(expense['paid_by_id']))
+            # Create a complete data dict for validation
             validation_data = {
-                'amount': data.get('amount', float(expense['amount'])),
-                'description': data.get('description', expense['description']),
-                'paid_by': data.get('paid_by', payer['name'] if payer else '')
+                'amount': data.get('amount', expense.amount),
+                'description': data.get('description', expense.description),
+                'paid_by': data.get('paid_by', expense.payer.name)
             }
             
             errors = validate_expense_data(validation_data)
             if errors:
                 return create_response(False, None, "; ".join(errors), 400)
         
-        # Prepare updates
-        updates = {}
+        # Update fields if provided
         if 'amount' in data:
-            updates['amount'] = float(data['amount'])
+            expense.amount = Decimal(str(data['amount']))
+        
         if 'description' in data:
-            updates['description'] = data['description'].strip()
+            expense.description = data['description'].strip()
+        
         if 'split_method' in data:
-            updates['split_method'] = data['split_method']
+            expense.split_method = SplitMethod(data['split_method'])
+        
         if 'paid_by' in data:
             paid_by_name = data['paid_by'].strip()
-            person = PersonModel.get_or_create(paid_by_name)
-            updates['paid_by_id'] = str(person['_id'])
-        
-        # Update the expense
-        if updates:
-            ExpenseModel.update(expense_id, updates)
+            person = Person.query.filter_by(name=paid_by_name).first()
+            if not person:
+                person = Person(name=paid_by_name)
+                db.session.add(person)
+                db.session.flush()
+            expense.paid_by_id = person.id
         
         # If amount changed or split method/participants changed, recreate splits
         if 'amount' in data or 'participants' in data or 'split_method' in data or 'splits' in data:
-            split_method_str = data.get('split_method', expense['split_method'])
+            split_method_str = data.get('split_method', expense.split_method.value)
             
             if split_method_str == 'equal':
-                payer = PersonModel.find_by_id(str(updates.get('paid_by_id', expense['paid_by_id'])))
-                participants = data.get('participants', [payer['name'] if payer else ''])
-                if payer and payer['name'] not in participants:
-                    participants.append(payer['name'])
-                from split_calculator import SplitCalculator
-                SplitCalculator.create_equal_splits(expense_id, participants)
+                participants = data.get('participants', [expense.payer.name])
+                if expense.payer.name not in participants:
+                    participants.append(expense.payer.name)
+                SettlementCalculator.create_equal_splits(expense.id, participants)
             elif split_method_str in ['exact', 'percentage'] and 'splits' in data:
-                from split_calculator import SplitCalculator
-                SplitCalculator.create_custom_splits(expense_id, data['splits'], split_method_str)
+                SettlementCalculator.create_custom_splits(expense.id, data['splits'], split_method_str)
         
-        # Get updated expense
-        updated_expense = ExpenseModel.find_by_id(expense_id)
-        return create_response(True, ExpenseModel.to_dict(updated_expense), "Expense updated successfully")
+        db.session.commit()
+        
+        return create_response(True, expense.to_dict(), "Expense updated successfully")
         
     except Exception as e:
+        db.session.rollback()
         logging.error(f"Error updating expense: {str(e)}")
         return create_response(False, None, f"Internal server error: {str(e)}", 500)
 
-@api.route('/expenses/<expense_id>', methods=['DELETE'])
+@api.route('/expenses/<int:expense_id>', methods=['DELETE'])
 def delete_expense(expense_id):
     """Delete an expense"""
     try:
-        expense = ExpenseModel.find_by_id(expense_id)
+        expense = Expense.query.get(expense_id)
         if not expense:
             return create_response(False, None, "Expense not found", 404)
         
-        success = ExpenseModel.delete(expense_id)
-        if success:
-            return create_response(True, None, "Expense deleted successfully")
-        else:
-            return create_response(False, None, "Failed to delete expense", 500)
+        db.session.delete(expense)
+        db.session.commit()
+        
+        return create_response(True, None, "Expense deleted successfully")
         
     except Exception as e:
+        db.session.rollback()
         logging.error(f"Error deleting expense: {str(e)}")
         return create_response(False, None, f"Internal server error: {str(e)}", 500)
 
@@ -267,14 +267,8 @@ def delete_expense(expense_id):
 def get_people():
     """Get all people"""
     try:
-        people = PersonModel.get_all()
-        people_data = []
-        for person in people:
-            people_data.append({
-                'id': str(person['_id']),
-                'name': person['name'],
-                'created_at': person['created_at'].isoformat() if person.get('created_at') else None
-            })
+        people = Person.query.order_by(Person.name).all()
+        people_data = [person.to_dict() for person in people]
         
         return create_response(True, people_data, "People retrieved successfully")
         
@@ -286,7 +280,7 @@ def get_people():
 def get_balances():
     """Get current balances for all people"""
     try:
-        balances = BalanceCalculator.calculate_balances()
+        balances = SettlementCalculator.calculate_balances()
         balances_list = list(balances.values())
         
         return create_response(True, balances_list, "Balances calculated successfully")
@@ -299,7 +293,7 @@ def get_balances():
 def get_settlements():
     """Get optimal settlements to balance all debts"""
     try:
-        settlements = BalanceCalculator.calculate_settlements()
+        settlements = SettlementCalculator.calculate_settlements()
         
         return create_response(True, settlements, "Settlements calculated successfully")
         

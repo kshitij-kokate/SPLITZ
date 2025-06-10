@@ -12,18 +12,14 @@ def index():
     """Homepage with overview"""
     try:
         # Get summary statistics
-        expenses = ExpenseModel.get_all()
-        people = PersonModel.get_all()
-        total_expenses = len(expenses)
-        total_people = len(people)
+        total_expenses = Expense.query.count()
+        total_people = Person.query.count()
         
-        # Get recent expenses (first 5)
-        recent_expenses = []
-        for expense in expenses[:5]:
-            recent_expenses.append(ExpenseModel.to_dict(expense))
+        # Get recent expenses
+        recent_expenses = Expense.query.order_by(Expense.created_at.desc()).limit(5).all()
         
         # Get current balances
-        balances = BalanceCalculator.calculate_balances()
+        balances = SettlementCalculator.calculate_balances()
         
         return render_template('index.html', 
                              total_expenses=total_expenses,
@@ -43,10 +39,8 @@ def index():
 def expenses():
     """Expenses management page"""
     try:
-        expenses_raw = ExpenseModel.get_all()
-        expenses = [ExpenseModel.to_dict(expense) for expense in expenses_raw]
-        people_raw = PersonModel.get_all()
-        people = [{'id': str(p['_id']), 'name': p['name']} for p in people_raw]
+        expenses = Expense.query.order_by(Expense.created_at.desc()).all()
+        people = Person.query.order_by(Person.name).all()
         
         return render_template('expenses.html', expenses=expenses, people=people)
     except Exception as e:
@@ -58,8 +52,8 @@ def expenses():
 def settlements():
     """Settlements page"""
     try:
-        balances = BalanceCalculator.calculate_balances()
-        settlements = BalanceCalculator.calculate_settlements()
+        balances = SettlementCalculator.calculate_balances()
+        settlements = SettlementCalculator.calculate_settlements()
         
         return render_template('settlements.html', 
                              balances=balances,
@@ -95,50 +89,55 @@ def add_expense():
             return redirect(url_for('web.expenses'))
         
         # Get or create the person who paid
-        person = PersonModel.get_or_create(paid_by)
-        person_id = str(person['_id'])
+        person = Person.query.filter_by(name=paid_by).first()
+        if not person:
+            person = Person(name=paid_by)
+            db.session.add(person)
+            db.session.flush()
         
         # Create the expense
-        expense = ExpenseModel.create(
-            amount=float(amount_decimal),
+        expense = Expense(
+            amount=amount_decimal,
             description=description,
-            paid_by_id=person_id
+            paid_by_id=person.id
         )
-        expense_id = str(expense['_id'])
+        db.session.add(expense)
+        db.session.flush()
         
         # Handle participants (default to all people if none selected)
         if not participants:
-            all_people = PersonModel.get_all()
-            participants = [p['name'] for p in all_people]
+            participants = [p.name for p in Person.query.all()]
         
         if paid_by not in participants:
             participants.append(paid_by)
         
         # Create equal splits
-        SplitCalculator.create_equal_splits(expense_id, participants)
+        SettlementCalculator.create_equal_splits(expense.id, participants)
+        
+        db.session.commit()
         
         flash('Expense added successfully', 'success')
         
     except Exception as e:
+        db.session.rollback()
         logging.error(f"Error adding expense: {str(e)}")
         flash(f'Error adding expense: {str(e)}', 'error')
     
     return redirect(url_for('web.expenses'))
 
-@web.route('/delete_expense/<expense_id>', methods=['POST'])
+@web.route('/delete_expense/<int:expense_id>', methods=['POST'])
 def delete_expense(expense_id):
     """Delete an expense"""
     try:
-        expense = ExpenseModel.find_by_id(expense_id)
+        expense = Expense.query.get(expense_id)
         if not expense:
             flash('Expense not found', 'error')
         else:
-            success = ExpenseModel.delete(expense_id)
-            if success:
-                flash('Expense deleted successfully', 'success')
-            else:
-                flash('Failed to delete expense', 'error')
+            db.session.delete(expense)
+            db.session.commit()
+            flash('Expense deleted successfully', 'success')
     except Exception as e:
+        db.session.rollback()
         logging.error(f"Error deleting expense: {str(e)}")
         flash(f'Error deleting expense: {str(e)}', 'error')
     
