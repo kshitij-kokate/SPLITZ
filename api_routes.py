@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify
-from app import db
-from models import Person, Expense, ExpenseSplit, SplitMethod
-from settlement_calculator import SettlementCalculator
+from mongo_models import PersonModel, ExpenseModel, ExpenseSplitModel, BalanceCalculator
+from database import SplitMethod
 from decimal import Decimal, InvalidOperation
 import logging
 
@@ -127,25 +126,20 @@ def create_expense():
         
         # Get or create the person who paid
         paid_by_name = data['paid_by'].strip()
-        person = Person.query.filter_by(name=paid_by_name).first()
-        if not person:
-            person = Person(name=paid_by_name)
-            db.session.add(person)
-            db.session.flush()  # Get the ID
+        person = PersonModel.get_or_create(paid_by_name)
+        person_id = str(person['_id'])
         
         # Determine split method
         split_method_str = data.get('split_method', 'equal')
-        split_method = SplitMethod(split_method_str)
         
         # Create the expense
-        expense = Expense(
-            amount=Decimal(str(data['amount'])),
+        expense = ExpenseModel.create(
+            amount=float(data['amount']),
             description=data['description'].strip(),
-            paid_by_id=person.id,
-            split_method=split_method
+            paid_by_id=person_id,
+            split_method=split_method_str
         )
-        db.session.add(expense)
-        db.session.flush()  # Get the expense ID
+        expense_id = str(expense['_id'])
         
         # Create splits based on method
         if split_method_str == 'equal':
@@ -153,17 +147,16 @@ def create_expense():
             participants = data.get('participants', [paid_by_name])
             if paid_by_name not in participants:
                 participants.append(paid_by_name)
-            SettlementCalculator.create_equal_splits(expense.id, participants)
+            from split_calculator import SplitCalculator
+            SplitCalculator.create_equal_splits(expense_id, participants)
         elif split_method_str in ['exact', 'percentage']:
             # Create custom splits
-            SettlementCalculator.create_custom_splits(expense.id, data['splits'], split_method_str)
+            from split_calculator import SplitCalculator
+            SplitCalculator.create_custom_splits(expense_id, data['splits'], split_method_str)
         
-        db.session.commit()
-        
-        return create_response(True, expense.to_dict(), "Expense created successfully", 201)
+        return create_response(True, ExpenseModel.to_dict(expense), "Expense created successfully", 201)
         
     except Exception as e:
-        db.session.rollback()
         logging.error(f"Error creating expense: {str(e)}")
         return create_response(False, None, f"Internal server error: {str(e)}", 500)
 
@@ -171,8 +164,8 @@ def create_expense():
 def get_expenses():
     """Get all expenses"""
     try:
-        expenses = Expense.query.order_by(Expense.created_at.desc()).all()
-        expenses_data = [expense.to_dict() for expense in expenses]
+        expenses = ExpenseModel.get_all()
+        expenses_data = [ExpenseModel.to_dict(expense) for expense in expenses]
         
         return create_response(True, expenses_data, "Expenses retrieved successfully")
         
@@ -180,11 +173,11 @@ def get_expenses():
         logging.error(f"Error retrieving expenses: {str(e)}")
         return create_response(False, None, f"Internal server error: {str(e)}", 500)
 
-@api.route('/expenses/<int:expense_id>', methods=['PUT'])
+@api.route('/expenses/<expense_id>', methods=['PUT'])
 def update_expense(expense_id):
     """Update an existing expense"""
     try:
-        expense = Expense.query.get(expense_id)
+        expense = ExpenseModel.find_by_id(expense_id)
         if not expense:
             return create_response(False, None, "Expense not found", 404)
         
@@ -194,54 +187,54 @@ def update_expense(expense_id):
         
         # Validate input if provided
         if 'amount' in data or 'description' in data or 'paid_by' in data:
-            # Create a complete data dict for validation
+            payer = PersonModel.find_by_id(str(expense['paid_by_id']))
             validation_data = {
-                'amount': data.get('amount', expense.amount),
-                'description': data.get('description', expense.description),
-                'paid_by': data.get('paid_by', expense.payer.name)
+                'amount': data.get('amount', float(expense['amount'])),
+                'description': data.get('description', expense['description']),
+                'paid_by': data.get('paid_by', payer['name'] if payer else '')
             }
             
             errors = validate_expense_data(validation_data)
             if errors:
                 return create_response(False, None, "; ".join(errors), 400)
         
-        # Update fields if provided
+        # Prepare updates
+        updates = {}
         if 'amount' in data:
-            expense.amount = Decimal(str(data['amount']))
-        
+            updates['amount'] = float(data['amount'])
         if 'description' in data:
-            expense.description = data['description'].strip()
-        
+            updates['description'] = data['description'].strip()
         if 'split_method' in data:
-            expense.split_method = SplitMethod(data['split_method'])
-        
+            updates['split_method'] = data['split_method']
         if 'paid_by' in data:
             paid_by_name = data['paid_by'].strip()
-            person = Person.query.filter_by(name=paid_by_name).first()
-            if not person:
-                person = Person(name=paid_by_name)
-                db.session.add(person)
-                db.session.flush()
-            expense.paid_by_id = person.id
+            person = PersonModel.get_or_create(paid_by_name)
+            updates['paid_by_id'] = str(person['_id'])
+        
+        # Update the expense
+        if updates:
+            ExpenseModel.update(expense_id, updates)
         
         # If amount changed or split method/participants changed, recreate splits
         if 'amount' in data or 'participants' in data or 'split_method' in data or 'splits' in data:
-            split_method_str = data.get('split_method', expense.split_method.value)
+            split_method_str = data.get('split_method', expense['split_method'])
             
             if split_method_str == 'equal':
-                participants = data.get('participants', [expense.payer.name])
-                if expense.payer.name not in participants:
-                    participants.append(expense.payer.name)
-                SettlementCalculator.create_equal_splits(expense.id, participants)
+                payer = PersonModel.find_by_id(str(updates.get('paid_by_id', expense['paid_by_id'])))
+                participants = data.get('participants', [payer['name'] if payer else ''])
+                if payer and payer['name'] not in participants:
+                    participants.append(payer['name'])
+                from split_calculator import SplitCalculator
+                SplitCalculator.create_equal_splits(expense_id, participants)
             elif split_method_str in ['exact', 'percentage'] and 'splits' in data:
-                SettlementCalculator.create_custom_splits(expense.id, data['splits'], split_method_str)
+                from split_calculator import SplitCalculator
+                SplitCalculator.create_custom_splits(expense_id, data['splits'], split_method_str)
         
-        db.session.commit()
-        
-        return create_response(True, expense.to_dict(), "Expense updated successfully")
+        # Get updated expense
+        updated_expense = ExpenseModel.find_by_id(expense_id)
+        return create_response(True, ExpenseModel.to_dict(updated_expense), "Expense updated successfully")
         
     except Exception as e:
-        db.session.rollback()
         logging.error(f"Error updating expense: {str(e)}")
         return create_response(False, None, f"Internal server error: {str(e)}", 500)
 
