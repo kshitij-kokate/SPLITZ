@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
-from mongo_models import PersonModel, ExpenseModel, ExpenseSplitModel, BalanceCalculator
-from database import SplitMethod
+from app import db
+from models import Person, Expense, ExpenseSplit, SplitMethod
+from settlement_calculator import SettlementCalculator
 from decimal import Decimal, InvalidOperation
 import logging
 
@@ -126,20 +127,25 @@ def create_expense():
         
         # Get or create the person who paid
         paid_by_name = data['paid_by'].strip()
-        person = PersonModel.get_or_create(paid_by_name)
-        person_id = str(person['_id'])
+        person = Person.query.filter_by(name=paid_by_name).first()
+        if not person:
+            person = Person(name=paid_by_name)
+            db.session.add(person)
+            db.session.flush()  # Get the ID
         
         # Determine split method
         split_method_str = data.get('split_method', 'equal')
+        split_method = SplitMethod(split_method_str)
         
         # Create the expense
-        expense = ExpenseModel.create(
-            amount=float(data['amount']),
+        expense = Expense(
+            amount=Decimal(str(data['amount'])),
             description=data['description'].strip(),
-            paid_by_id=person_id,
-            split_method=split_method_str
+            paid_by_id=person.id,
+            split_method=split_method
         )
-        expense_id = str(expense['_id'])
+        db.session.add(expense)
+        db.session.flush()  # Get the expense ID
         
         # Create splits based on method
         if split_method_str == 'equal':
@@ -147,16 +153,17 @@ def create_expense():
             participants = data.get('participants', [paid_by_name])
             if paid_by_name not in participants:
                 participants.append(paid_by_name)
-            from split_calculator import SplitCalculator
-            SplitCalculator.create_equal_splits(expense_id, participants)
+            SettlementCalculator.create_equal_splits(expense.id, participants)
         elif split_method_str in ['exact', 'percentage']:
             # Create custom splits
-            from split_calculator import SplitCalculator
-            SplitCalculator.create_custom_splits(expense_id, data['splits'], split_method_str)
+            SettlementCalculator.create_custom_splits(expense.id, data['splits'], split_method_str)
         
-        return create_response(True, ExpenseModel.to_dict(expense), "Expense created successfully", 201)
+        db.session.commit()
+        
+        return create_response(True, expense.to_dict(), "Expense created successfully", 201)
         
     except Exception as e:
+        db.session.rollback()
         logging.error(f"Error creating expense: {str(e)}")
         return create_response(False, None, f"Internal server error: {str(e)}", 500)
 
@@ -164,8 +171,8 @@ def create_expense():
 def get_expenses():
     """Get all expenses"""
     try:
-        expenses = ExpenseModel.get_all()
-        expenses_data = [ExpenseModel.to_dict(expense) for expense in expenses]
+        expenses = Expense.query.order_by(Expense.created_at.desc()).all()
+        expenses_data = [expense.to_dict() for expense in expenses]
         
         return create_response(True, expenses_data, "Expenses retrieved successfully")
         
